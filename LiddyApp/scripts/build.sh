@@ -40,7 +40,7 @@ cp "$BUILD/Liddy" "$APP/Contents/MacOS/Liddy"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$APP/Contents/Info.plist"
-if [ ! -f "$BUILD/AppIcon.icns" ]; then
+if [ ! -f "$BUILD/AppIcon.icns" ] || [ scripts/make_icon.swift -nt "$BUILD/AppIcon.icns" ]; then
   swiftc_ -O scripts/make_icon.swift -o "$BUILD/make_icon"
   rm -rf "$BUILD/AppIcon.iconset"
   "$BUILD/make_icon" "$BUILD/AppIcon.iconset"
