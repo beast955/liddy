@@ -63,8 +63,8 @@ final class AppModel {
             guard config != oldValue else { return }
             store.save(config)
             detector.settings = config.detector
-            privacyGuard.muteMic = config.guardMutesMic
-            privacyGuard.stopCamera = config.guardStopsCamera
+            privacyShield.muteMic = config.shieldMutesMic
+            privacyShield.stopCamera = config.shieldStopsCamera
             if config.modelChoice != oldValue.modelChoice || config.rejectFactor != oldValue.rejectFactor { refitActiveModel() }
             if config.minTapStrength != oldValue.minTapStrength { scheduleRetrain() }
         }
@@ -84,7 +84,7 @@ final class AppModel {
     var settingsFocusZone: Int?
     var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
 
-    let privacyGuard: PrivacyGuard
+    let privacyShield: PrivacyShield
 
     /// False in tests: no windows, overlays, sounds or on-screen feedback.
     @ObservationIgnored let presentsUI: Bool
@@ -116,7 +116,7 @@ final class AppModel {
     init(store: Store, presentsUI: Bool) {
         self.store = store
         self.presentsUI = presentsUI
-        privacyGuard = PrivacyGuard(presentsOverlay: presentsUI)
+        privacyShield = PrivacyShield(presentsOverlay: presentsUI)
         config = store.loadConfig()
         dataset = store.loadDataset()
         nextSampleID = (dataset.samples.map(\.id).max() ?? 0) + 1
@@ -124,9 +124,9 @@ final class AppModel {
         if config.actions.isEmpty { config.actions = ZoneAction.defaults(for: dataset.grid) }
         if config.detector.refractory < 0.5 { config.detector.refractory = 0.5 }  // older default was 0.35 s
         detector.settings = config.detector
-        privacyGuard.muteMic = config.guardMutesMic
-        privacyGuard.stopCamera = config.guardStopsCamera
-        performAction = { [unowned self] action in ActionRunner.perform(action, guardController: privacyGuard) }
+        privacyShield.muteMic = config.shieldMutesMic
+        privacyShield.stopCamera = config.shieldStopsCamera
+        performAction = { [unowned self] action in ActionRunner.perform(action, shieldController: privacyShield) }
     }
 
     func start() {
@@ -168,7 +168,7 @@ final class AppModel {
             "rate": status.rate.rounded(), "lid": status.lid ?? -1, "noise": status.noise, "threshold": status.threshold,
             "accessibility": status.accessibility, "enabled": config.enabled, "trained": isTrained,
             "model": modelName, "accuracy": acc, "grid": grid.title,
-            "samples": dataset.samples.count, "guardActive": privacyGuard.isActive,
+            "samples": dataset.samples.count, "privacyShieldActive": privacyShield.isActive,
             "calibrating": calibration != nil, "taps": recent.count,
         ]
         info["recent"] = recent.prefix(10).map { ["id": $0.id, "outcome": "\($0.outcome)", "label": $0.label ?? "", "detail": $0.detail,
@@ -183,7 +183,7 @@ final class AppModel {
     }
 
     /// Developer hooks, only with --test-hooks: `dev.liddy.test` distributed notifications replay a recorded
-    /// tap for a zone ("cmd": "tap", "label": "z0"), toggle Privacy Shield ("guard"), or open Settings ("settings").
+    /// tap for a zone ("cmd": "tap", "label": "z0"), toggle Privacy Shield ("privacyShield"), or open Settings ("settings").
     private func installTestHooks() {
         Log.app.notice("Test hooks enabled")
         testHookObserver = DistributedNotificationCenter.default().addObserver(
@@ -194,7 +194,7 @@ final class AppModel {
                 guard let self else { return }
                 switch cmd {
                 case "tap": if let ev = self.replayEvent(label: label) { self.handle(ev) }
-                case "guard": self.privacyGuard.toggle()
+                case "privacyShield": self.privacyShield.toggle()
                 case "settings": self.showSettings()
                 case "calibrate": self.startCalibration()
                 case "endCalibration": self.endCalibration()
@@ -286,9 +286,9 @@ final class AppModel {
         let p = model.predict(Features.extract(g: event.g, a: event.a), rejectFactor: config.rejectFactor)
         let action = config.actions[p.label] ?? ZoneAction()
 
-        if privacyGuard.isActive {
-            if p.rejected == nil && action.kind == .privacyGuard {
-                privacyGuard.release()
+        if privacyShield.isActive {
+            if p.rejected == nil && action.kind == .privacyShield {
+                privacyShield.release()
                 record(.acted, p.label, p.confidence, "Privacy Shield off")
             } else {
                 record(.guarded, p.label, p.confidence, "Ignored while Privacy Shield is on")
@@ -296,7 +296,7 @@ final class AppModel {
             return
         }
         // Privacy Shield hides the screen and mutes the mic, so a guess must be much surer before it fires.
-        let floor = action.kind == .privacyGuard ? max(config.minConfidence, 0.85) : config.minConfidence
+        let floor = action.kind == .privacyShield ? max(config.minConfidence, 0.85) : config.minConfidence
         let confidence = p.confidence
         if let reason = p.rejected ?? (confidence < floor ? "Not sure which zone" : nil) {
             record(.rejected, p.label, confidence, reason)
@@ -307,7 +307,7 @@ final class AppModel {
         record(.acted, p.label, confidence, error ?? action.title)
         if let z = zoneIndex(p.label) { ripple = (z, (ripple?.id ?? 0) + 1) }
         Log.action.notice("Zone \(p.label, privacy: .public) (\(Int(confidence * 100))%) -> \(action.title, privacy: .public)\(error.map { " failed: " + $0 } ?? "", privacy: .public)")
-        if presentsUI && config.showTapFeedback && action.kind != .privacyGuard {
+        if presentsUI && config.showTapFeedback && action.kind != .privacyShield {
             TapFeedback.shared.show(zone: zoneIndex(p.label), grid: grid, action: action)
         }
         if presentsUI && config.playSounds && action.kind != .none && error == nil { NSSound(named: "Pop")?.play() }
@@ -540,7 +540,7 @@ final class AppModel {
         let action = action(for: zone)
         ripple = (zone, (ripple?.id ?? 0) + 1)
         _ = performAction(action)
-        if presentsUI && config.showTapFeedback && action.kind != .privacyGuard { TapFeedback.shared.show(zone: zone, grid: grid, action: action) }
+        if presentsUI && config.showTapFeedback && action.kind != .privacyShield { TapFeedback.shared.show(zone: zone, grid: grid, action: action) }
     }
 
     func setLaunchAtLogin(_ on: Bool) {

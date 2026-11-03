@@ -14,11 +14,11 @@ final class AppHarness {
         if let config { store.save(config) }
         app = AppModel(store: store, presentsUI: false)
         app.input.allowsSystemFallback = false  // input history comes only from what a test records
-        app.privacyGuard.muteMic = false
-        app.privacyGuard.stopCamera = false
+        app.privacyShield.muteMic = false
+        app.privacyShield.stopCamera = false
         app.performAction = { [unowned self] action in
             self.performed.append(action)
-            if action.kind == .privacyGuard { self.app.privacyGuard.toggle() }
+            if action.kind == .privacyShield { self.app.privacyShield.toggle() }
             return nil
         }
     }
@@ -60,7 +60,7 @@ func appLogicTests() {
                 total += 1
                 let r = h.app.lastRecord!
                 if r.outcome == .acted && r.label == zoneLabel(zone) && h.performed == [h.app.action(for: zone)] { right += 1 }
-                if h.app.privacyGuard.isActive { h.app.privacyGuard.release() }
+                if h.app.privacyShield.isActive { h.app.privacyShield.release() }
             }
         }
         T.note("correct zone + action: \(right)/\(total)")
@@ -163,8 +163,8 @@ func appLogicTests() {
         for _ in 0..<40 {
             h.performed.removeAll()
             h.tap("z3")  // the Privacy Shield zone in the default 2×2 layout
-            if h.performed.contains(where: { $0.kind == .privacyGuard }) { fired.append(h.app.lastRecord?.confidence ?? 0) }
-            if h.app.privacyGuard.isActive { h.app.privacyGuard.release() }
+            if h.performed.contains(where: { $0.kind == .privacyShield }) { fired.append(h.app.lastRecord?.confidence ?? 0) }
+            if h.app.privacyShield.isActive { h.app.privacyShield.release() }
         }
         T.note("fired \(fired.count)/40, lowest confidence \(fired.min().map { String(format: "%.2f", $0) } ?? "-")")
         T.expect(fired.allSatisfy { $0 >= 0.85 }, "Privacy Shield fired below 85% confidence")
@@ -251,16 +251,16 @@ func appLogicTests() {
     T.run("Privacy Shield: other zones ignored, guard zone releases it") {
         let h = AppHarness(name: "guard")
         guard h.train() else { return T.fail("no model") }
-        let guardZone = (0..<4).first { h.app.action(for: $0).kind == .privacyGuard }!
-        h.app.privacyGuard.engage()
-        T.expect(h.app.privacyGuard.isActive, "guard did not engage")
+        let guardZone = (0..<4).first { h.app.action(for: $0).kind == .privacyShield }!
+        h.app.privacyShield.engage()
+        T.expect(h.app.privacyShield.isActive, "guard did not engage")
         h.performed.removeAll()
         let other = zoneLabel((guardZone + 2) % 4)  // a zone in the other row: never confused in your data
         for _ in 0..<5 { h.tap(other) }
         T.expect(h.performed.isEmpty, "zone actions ran while guarded: \(h.performed.map(\.title))")
         T.expect(h.app.recent.prefix(5).allSatisfy { $0.outcome == .guarded || $0.outcome == .rejected }, "taps while guarded not marked guarded")
-        for _ in 0..<5 where h.app.privacyGuard.isActive { h.tap(zoneLabel(guardZone)) }
-        T.expect(!h.app.privacyGuard.isActive, "tapping the guard zone did not release Privacy Shield")
+        for _ in 0..<5 where h.app.privacyShield.isActive { h.tap(zoneLabel(guardZone)) }
+        T.expect(!h.app.privacyShield.isActive, "tapping the guard zone did not release Privacy Shield")
     }
 
     T.run("full calibration flow: taps → noise → train → done") {
@@ -305,7 +305,7 @@ func appLogicTests() {
         h.app.startCalibration(grid: Grid(rows: 3, cols: 3), perZone: 5)
         T.expect(h.app.grid == Grid(rows: 3, cols: 3), "grid not switched")
         T.expect(h.app.dataset.zoneTapCount == 0 && h.app.count(for: noiseLabel) == 1, "zone taps \(h.app.dataset.zoneTapCount), noise \(h.app.count(for: noiseLabel))")
-        T.expect(h.app.config.actions.count == 9 && h.app.action(for: 8).kind == .privacyGuard, "3×3 default actions")
+        T.expect(h.app.config.actions.count == 9 && h.app.action(for: 8).kind == .privacyShield, "3×3 default actions")
         T.expect(!h.app.isTrained, "old model kept after grid change")
         T.expect(h.app.calibration?.sequence.count == 45, "3×3 × 5 sequence \(h.app.calibration?.sequence.count ?? 0)")
         h.app.endCalibration()
@@ -352,8 +352,19 @@ func appLogicTests() {
         let dir = T.tempDir("partial")
         try! #"{"enabled": false, "detector": {"k": 4}}"#.write(to: dir.appendingPathComponent("config.json"), atomically: true, encoding: .utf8)
         let cfg = Store(directory: dir).loadConfig()
-        T.expect(!cfg.enabled && cfg.detector.k == 4 && cfg.detector.minThreshold == 1 && cfg.rejectFactor == 2 && cfg.guardMutesMic, "partial config \(cfg)")
+        T.expect(!cfg.enabled && cfg.detector.k == 4 && cfg.detector.minThreshold == 1 && cfg.rejectFactor == 2 && cfg.shieldMutesMic, "partial config \(cfg)")
         try? FileManager.default.removeItem(at: dir)
+    }
+
+    T.run("Privacy Shield reads settings saved with the old feature name") {
+        let data = #"{"actions":{"z3":{"kind":"privacyGuard"}},"guardMutesMic":false,"guardStopsCamera":false}"#.data(using: .utf8)!
+        let cfg = try! JSONDecoder().decode(AppConfig.self, from: data)
+        T.expect(cfg.actions["z3"]?.kind == .privacyShield, "legacy zone action was not migrated")
+        T.expect(!cfg.shieldMutesMic && !cfg.shieldStopsCamera, "legacy privacy options were not migrated")
+
+        let saved = String(data: try! JSONEncoder().encode(cfg), encoding: .utf8)!
+        T.expect(saved.contains("privacyShield") && saved.contains("shieldMutesMic") && !saved.contains("privacyGuard"),
+                 "updated settings were not saved with the Privacy Shield name: \(saved)")
     }
 
     T.run("model choice and reject factor apply live") {
@@ -371,7 +382,7 @@ func appLogicTests() {
         guard h.train() else { return T.fail("no model") }
         let events = (0..<100).map { _ in h.app.replayEvent(label: zoneLabel(Int.random(in: 0..<4)))! }
         let t0 = Date()
-        for e in events { h.app.handle(e); if h.app.privacyGuard.isActive { h.app.privacyGuard.release() } }
+        for e in events { h.app.handle(e); if h.app.privacyShield.isActive { h.app.privacyShield.release() } }
         let ms = Date().timeIntervalSince(t0) * 1000 / 100
         T.note(String(format: "%.2f ms per tap on the main thread", ms))
         T.expect(ms < 15, "handling a tap takes \(ms) ms")

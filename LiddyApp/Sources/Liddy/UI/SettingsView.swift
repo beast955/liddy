@@ -228,7 +228,7 @@ private struct ZonesPane: View {
                 }
             }
 
-            if current.kind == .privacyGuard { PrivacyGuardSection() }
+            if current.kind == .privacyShield { PrivacyShieldSection() }
 
             Section {
                 Picker("Grid", selection: Binding(get: { app.grid }, set: { g in if g != app.grid { pendingGrid = g } })) {
@@ -267,14 +267,14 @@ private struct ZonesPane: View {
     }
 }
 
-private struct PrivacyGuardSection: View {
+private struct PrivacyShieldSection: View {
     @Environment(AppModel.self) private var app
 
     var body: some View {
         @Bindable var app = app
         Section {
-            Toggle("Mute every microphone", isOn: $app.config.guardMutesMic)
-            Toggle("Turn the camera off in meetings", isOn: $app.config.guardStopsCamera)
+            Toggle("Mute every microphone", isOn: $app.config.shieldMutesMic)
+            Toggle("Turn the camera off in meetings", isOn: $app.config.shieldStopsCamera)
         } header: {
             Text("Privacy Shield")
         } footer: {

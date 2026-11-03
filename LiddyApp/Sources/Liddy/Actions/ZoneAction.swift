@@ -2,8 +2,26 @@ import AppKit
 import SwiftUI
 
 enum ActionKind: String, Codable, CaseIterable, Identifiable {
-    case none, desktopLeft, desktopRight, newNote, playPause, nextTrack, previousTrack, openApp, privacyGuard
+    case none, desktopLeft, desktopRight, newNote, playPause, nextTrack, previousTrack, openApp, privacyShield
     var id: String { rawValue }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        if value == "privacyGuard" {
+            self = .privacyShield
+            return
+        }
+        guard let kind = Self(rawValue: value) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unknown action kind: \(value)")
+        }
+        self = kind
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 
     var title: String {
         switch self {
@@ -15,7 +33,7 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         case .nextTrack: "Next Track"
         case .previousTrack: "Previous Track"
         case .openApp: "Open App"
-        case .privacyGuard: "Privacy Shield"
+        case .privacyShield: "Privacy Shield"
         }
     }
 
@@ -29,7 +47,7 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         case .nextTrack: "Skip to the next track"
         case .previousTrack: "Go back a track"
         case .openApp: "Launch an app, or bring it to the front"
-        case .privacyGuard: "Mute, camera off and blur the screen"
+        case .privacyShield: "Mute, camera off and blur the screen"
         }
     }
 
@@ -43,7 +61,7 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         case .nextTrack: "forward.end.fill"
         case .previousTrack: "backward.end.fill"
         case .openApp: "arrow.up.forward.app"
-        case .privacyGuard: "eye.slash"
+        case .privacyShield: "eye.slash"
         }
     }
 
@@ -55,7 +73,7 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         case .newNote: .yellow
         case .playPause, .nextTrack, .previousTrack: .pink
         case .openApp: .teal
-        case .privacyGuard: .indigo
+        case .privacyShield: .indigo
         }
     }
 
@@ -66,7 +84,7 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         case .desktopLeft, .desktopRight: "Desktop"
         case .playPause, .nextTrack, .previousTrack: "Music"
         case .newNote, .openApp: "Apps"
-        case .privacyGuard: "Privacy"
+        case .privacyShield: "Privacy"
         }
     }
 
@@ -75,7 +93,7 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .desktopLeft, .desktopRight, .newNote, .playPause, .nextTrack, .previousTrack: true
         // Privacy Shield's blur and mic mute work without it; only the camera shortcut needs it (reported in the overlay).
-        case .none, .openApp, .privacyGuard: false
+        case .none, .openApp, .privacyShield: false
         }
     }
 }
@@ -93,9 +111,9 @@ struct ZoneAction: Codable, Equatable, Hashable {
     static func defaults(for grid: Grid) -> [String: ZoneAction] {
         let layout: [ActionKind]
         switch (grid.rows, grid.cols) {
-        case (2, 2): layout = [.desktopLeft, .desktopRight, .playPause, .privacyGuard]
-        case (2, 3): layout = [.desktopLeft, .newNote, .desktopRight, .previousTrack, .playPause, .privacyGuard]
-        case (3, 3): layout = [.desktopLeft, .newNote, .desktopRight, .previousTrack, .playPause, .nextTrack, .openApp, .none, .privacyGuard]
+        case (2, 2): layout = [.desktopLeft, .desktopRight, .playPause, .privacyShield]
+        case (2, 3): layout = [.desktopLeft, .newNote, .desktopRight, .previousTrack, .playPause, .privacyShield]
+        case (3, 3): layout = [.desktopLeft, .newNote, .desktopRight, .previousTrack, .playPause, .nextTrack, .openApp, .none, .privacyShield]
         default: layout = []
         }
         var out: [String: ZoneAction] = [:]

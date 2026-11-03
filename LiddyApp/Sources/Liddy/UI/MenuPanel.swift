@@ -11,7 +11,7 @@ struct MenuBarLabel: View {
     }
 
     private var symbol: String {
-        if app.privacyGuard.isActive { return "eye.slash.fill" }
+        if app.privacyShield.isActive { return "eye.slash.fill" }
         if app.calibration != nil { return "scope" }
         if !app.config.enabled { return "hand.raised.slash" }
         return app.tapFlash ? "hand.tap.fill" : "hand.tap"
@@ -37,7 +37,7 @@ struct MenuPanel: View {
                 firstRun.padding(.horizontal, 14)
             }
             motion.padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 12)
-            privacyGuard.padding(.horizontal, 14).padding(.bottom, 10)
+            privacyShield.padding(.horizontal, 14).padding(.bottom, 10)
             Divider().padding(.horizontal, 8)
             VStack(spacing: 0) {
                 MenuRow(title: app.isTrained ? "Calibrate Again…" : "Calibrate…", symbol: "scope") { dismiss(); app.startCalibration() }
@@ -90,7 +90,7 @@ struct MenuPanel: View {
     private var statusTint: Color {
         if let error = app.status.error, !error.isEmpty { return .orange }
         if !app.config.enabled { return .secondary }
-        if app.privacyGuard.isActive { return DS.violet }
+        if app.privacyShield.isActive { return DS.violet }
         if app.status.rate < 50 { return .orange }
         return DS.accent
     }
@@ -98,7 +98,7 @@ struct MenuPanel: View {
     private var statusLine: String {
         if let e = app.status.error, !e.isEmpty { return "Motion sensor unavailable" }
         if app.status.rate < 50 { return "Starting the motion sensor…" }
-        if app.privacyGuard.isActive { return "Privacy Shield is on" }
+        if app.privacyShield.isActive { return "Privacy Shield is on" }
         if app.calibration != nil { return "Calibrating" }
         if !app.config.enabled { return "Paused" }
         if app.isTraining { return "Learning your taps…" }
@@ -224,14 +224,14 @@ struct MenuPanel: View {
 
     // MARK: Privacy Shield
 
-    private var privacyGuard: some View {
-        let on = app.privacyGuard.isActive
-        return Button { app.privacyGuard.toggle() } label: {
+    private var privacyShield: some View {
+        let on = app.privacyShield.isActive
+        return Button { app.privacyShield.toggle() } label: {
             Label(on ? "Turn Off Privacy Shield" : "Privacy Shield", systemImage: on ? "eye" : "eye.slash")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
-        .tint(ActionKind.privacyGuard.tint)
+        .tint(ActionKind.privacyShield.tint)
         .controlSize(.large)
         .help("Mute every microphone, turn your meeting camera off and hide the screen")
     }

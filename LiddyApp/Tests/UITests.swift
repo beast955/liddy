@@ -69,12 +69,12 @@ func uiTests() {
     shot("calibration 3x3 target centre", size, CalibrationView().environment(h.app))
     h.app.calibration = nil
 
-    let g = PrivacyGuard(presentsOverlay: false)
+    let g = PrivacyShield(presentsOverlay: false)
     g.muteMic = false
     g.stopCamera = false
     g.engage()
-    shot("privacy overlay", size, PrivacyOverlayView(guardState: g, isPrimary: true))
-    shot("privacy overlay secondary screen", CGSize(width: 600, height: 380), PrivacyOverlayView(guardState: g, isPrimary: false))
+    shot("privacy overlay", size, PrivacyOverlayView(shieldState: g, isPrimary: true))
+    shot("privacy overlay secondary screen", CGSize(width: 600, height: 380), PrivacyOverlayView(shieldState: g, isPrimary: false))
     g.release()
 
     T.run("app catalog lists running and installed apps") {

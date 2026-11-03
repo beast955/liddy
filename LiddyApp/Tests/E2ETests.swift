@@ -19,7 +19,7 @@ func endToEndTests() {
     store.save(T.loadDataset())
     var cfg = AppConfig()
     cfg.actions = ["z0": ZoneAction(kind: .openApp, appBundleID: "com.apple.calculator", appName: "Calculator"),
-                   "z1": ZoneAction(kind: .none), "z2": ZoneAction(kind: .none), "z3": ZoneAction(kind: .privacyGuard)]
+                   "z1": ZoneAction(kind: .none), "z2": ZoneAction(kind: .none), "z3": ZoneAction(kind: .privacyShield)]
     cfg.playSounds = false
     store.save(cfg)
 
@@ -164,28 +164,28 @@ func endToEndTests() {
     T.run("gated and guarded taps don't act; guard zone toggles Privacy Shield") {
         let mic = micState()
         send("tap", "z3")
-        T.expect(T.wait(4) { (status()["guardActive"] as? Bool) == true }, "guard did not engage from its zone")
+        T.expect(T.wait(4) { (status()["privacyShieldActive"] as? Bool) == true }, "guard did not engage from its zone")
         T.sleep(0.8)
         let overlays = windows(pid: pid).filter { $0.layer == overlayLevel }
         T.expect(overlays.count == NSScreen.screens.count, "overlays \(overlays.count)")
-        if let o = overlays.first { capture(windowID: o.id, name: "e2e_privacy_guard") }
+        if let o = overlays.first { capture(windowID: o.id, name: "e2e_privacy_shield") }
         T.expect(micState() != mic || mic.values.allSatisfy(\.isEmpty), "mic not muted by the app")
         send("tap", "z0")
         T.wait(3) { (last()["outcome"] as? String) == "guarded" }
         T.expect(last()["outcome"] as? String == "guarded", "tap while guarded: \(last())")
         send("tap", "z3")
-        T.expect(T.wait(4) { (status()["guardActive"] as? Bool) == false }, "guard zone did not release")
+        T.expect(T.wait(4) { (status()["privacyShieldActive"] as? Bool) == false }, "guard zone did not release")
         T.sleep(0.6)
         T.expect(micState() == mic, "mic not restored by the app")
         T.expect(windows(pid: pid).allSatisfy { $0.layer != overlayLevel }, "overlay left on screen")
     }
 
     T.run("Privacy Shield dismisses with a click") {
-        send("guard")
-        T.expect(T.wait(4) { (status()["guardActive"] as? Bool) == true }, "guard hook did not engage")
+        send("privacyShield")
+        T.expect(T.wait(4) { (status()["privacyShieldActive"] as? Bool) == true }, "guard hook did not engage")
         T.sleep(0.8)
         click(at: CGPoint(x: NSScreen.screens[0].frame.midX, y: NSScreen.screens[0].frame.midY + 200))
-        T.expect(T.wait(4) { (status()["guardActive"] as? Bool) == false }, "click did not dismiss the guard")
+        T.expect(T.wait(4) { (status()["privacyShieldActive"] as? Bool) == false }, "click did not dismiss the guard")
     }
 
     T.run("Settings window opens and renders") {

@@ -38,8 +38,15 @@ struct AppConfig: Codable, Equatable {
     var actions: [String: ZoneAction] = [:]
     var showTapFeedback = true
     var playSounds = true
-    var guardMutesMic = true
-    var guardStopsCamera = true
+    var shieldMutesMic = true
+    var shieldStopsCamera = true
+
+    private enum CodingKeys: String, CodingKey {
+        case enabled, detector, rejectFactor, minConfidence, minTapStrength, modelChoice, actions
+        case showTapFeedback, playSounds, shieldMutesMic, shieldStopsCamera
+        case legacyGuardMutesMic = "guardMutesMic"
+        case legacyGuardStopsCamera = "guardStopsCamera"
+    }
 
     init() {}
     init(from decoder: Decoder) throws {
@@ -54,8 +61,25 @@ struct AppConfig: Codable, Equatable {
         actions = try c.decodeIfPresent([String: ZoneAction].self, forKey: .actions) ?? d.actions
         showTapFeedback = try c.decodeIfPresent(Bool.self, forKey: .showTapFeedback) ?? d.showTapFeedback
         playSounds = try c.decodeIfPresent(Bool.self, forKey: .playSounds) ?? d.playSounds
-        guardMutesMic = try c.decodeIfPresent(Bool.self, forKey: .guardMutesMic) ?? d.guardMutesMic
-        guardStopsCamera = try c.decodeIfPresent(Bool.self, forKey: .guardStopsCamera) ?? d.guardStopsCamera
+        shieldMutesMic = try c.decodeIfPresent(Bool.self, forKey: .shieldMutesMic)
+            ?? c.decodeIfPresent(Bool.self, forKey: .legacyGuardMutesMic) ?? d.shieldMutesMic
+        shieldStopsCamera = try c.decodeIfPresent(Bool.self, forKey: .shieldStopsCamera)
+            ?? c.decodeIfPresent(Bool.self, forKey: .legacyGuardStopsCamera) ?? d.shieldStopsCamera
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(enabled, forKey: .enabled)
+        try c.encode(detector, forKey: .detector)
+        try c.encode(rejectFactor, forKey: .rejectFactor)
+        try c.encode(minConfidence, forKey: .minConfidence)
+        try c.encode(minTapStrength, forKey: .minTapStrength)
+        try c.encode(modelChoice, forKey: .modelChoice)
+        try c.encode(actions, forKey: .actions)
+        try c.encode(showTapFeedback, forKey: .showTapFeedback)
+        try c.encode(playSounds, forKey: .playSounds)
+        try c.encode(shieldMutesMic, forKey: .shieldMutesMic)
+        try c.encode(shieldStopsCamera, forKey: .shieldStopsCamera)
     }
 }
 

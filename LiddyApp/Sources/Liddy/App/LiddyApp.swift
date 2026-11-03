@@ -25,6 +25,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        MainActor.assumeIsolated { AppModel.shared.privacyGuard.release() }
+        MainActor.assumeIsolated { AppModel.shared.privacyShield.release() }
     }
 }
