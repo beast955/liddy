@@ -9,8 +9,12 @@ enum T {
     static var suite = ""
     static var current = ""
     static var failures = 0
-    nonisolated static let fixtures = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
-        .appendingPathComponent("../Tests/Fixtures").standardized
+    nonisolated static let fixtures: URL = {
+        let workingDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+        let executable = URL(fileURLWithPath: CommandLine.arguments[0], relativeTo: workingDirectory).standardizedFileURL
+        let appRoot = executable.deletingLastPathComponent().deletingLastPathComponent()
+        return appRoot.appendingPathComponent("Tests/Fixtures", isDirectory: true)
+    }()
     nonisolated static let artifacts: URL = {
         let dir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent().appendingPathComponent("test-artifacts")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
