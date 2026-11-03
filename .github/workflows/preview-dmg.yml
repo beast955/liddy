@@ -37,6 +37,9 @@ jobs:
           LIDDY_VERSION="$VERSION" LIDDY_BUILD_NUMBER="$BUILD_NUMBER" \
             ./LiddyApp/scripts/build.sh --no-install
 
+      - name: Run app logic and UI snapshot checks
+        run: ./LiddyApp/scripts/test.sh
+
       - name: Package preview DMG
         env:
           VERSION: ${{ inputs.version }}
@@ -58,5 +61,13 @@ jobs:
         with:
           name: Liddy-${{ inputs.version }}-preview
           path: LiddyApp/build/preview/Liddy-${{ inputs.version }}-preview.dmg*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload UI snapshots and test summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: Liddy-${{ inputs.version }}-ui-check
+          path: LiddyApp/build/test-artifacts/
           if-no-files-found: error
           retention-days: 7

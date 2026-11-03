@@ -25,23 +25,67 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsPane.allCases, selection: pane) { p in
-                Label(p.title, systemImage: p.symbol).tag(p)
-            }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 190, max: 220)
-        } detail: {
-            Group {
-                switch pane.wrappedValue ?? .zones {
-                case .zones: ZonesPane()
-                case .training: TrainingPane()
-                case .detection: DetectionPane()
-                case .permissions: PermissionsPane()
-                case .general: GeneralPane()
+            VStack(spacing: 0) {
+                HStack(spacing: 11) {
+                    Image(systemName: "rectangle.split.3x3.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(DS.accent)
+                        .frame(width: 38, height: 38)
+                        .background(DS.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(DS.accent.opacity(0.22), lineWidth: 1))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Liddy")
+                            .font(.system(.title3, design: .rounded).weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text("TAP CONTROL")
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .tracking(1.2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 18)
+                .padding(.bottom, 14)
+
+                Rectangle().fill(DS.hairline).frame(height: 1).padding(.horizontal, 12)
+
+                List(SettingsPane.allCases, selection: pane) { p in
+                    Label(p.title, systemImage: p.symbol)
+                        .tag(p)
+                        .font(.system(.body, design: .rounded))
+                        .padding(.vertical, 4)
+                }
+                .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
+                .background(DS.sidebar)
+                .padding(.top, 8)
             }
-            .formStyle(.grouped)
-            .navigationTitle((pane.wrappedValue ?? .zones).title)
+            .background(DS.sidebar)
+            .navigationSplitViewColumnWidth(min: 200, ideal: 216, max: 246)
+        } detail: {
+            ZStack {
+                DS.canvas.ignoresSafeArea()
+                Group {
+                    switch pane.wrappedValue ?? .zones {
+                    case .zones: ZonesPane()
+                    case .training: TrainingPane()
+                    case .detection: DetectionPane()
+                    case .permissions: PermissionsPane()
+                    case .general: GeneralPane()
+                    }
+                }
+                .formStyle(.grouped)
+                .scrollContentBackground(.hidden)
+                .navigationTitle((pane.wrappedValue ?? .zones).title)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
+            }
         }
+        .navigationSplitViewStyle(.balanced)
+        .tint(DS.accent)
+        .preferredColorScheme(.dark)
     }
 }
 

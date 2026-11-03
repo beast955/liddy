@@ -15,8 +15,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             w.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
             w.titlebarAppearsTransparent = true
             w.toolbarStyle = .unified
-            w.setContentSize(NSSize(width: 980, height: 700))
-            w.contentMinSize = NSSize(width: 880, height: 620)
+            w.appearance = NSAppearance(named: .darkAqua)
+            w.backgroundColor = NSColor(calibratedRed: 0.025, green: 0.035, blue: 0.060, alpha: 1)
+            w.setContentSize(NSSize(width: 1080, height: 760))
+            w.contentMinSize = NSSize(width: 940, height: 660)
             w.isReleasedWhenClosed = false
             w.delegate = self
             w.center()

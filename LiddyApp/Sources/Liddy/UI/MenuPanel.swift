@@ -48,20 +48,36 @@ struct MenuPanel: View {
             }
             .padding(6)
         }
-        .frame(width: 320)
+        .padding(.vertical, 8)
+        .frame(width: 342)
+        .background(DS.panel, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(DS.hairline, lineWidth: 1))
+        .tint(DS.accent)
+        .preferredColorScheme(.dark)
     }
 
     // MARK: Header
 
     private func header(enabled: Binding<Bool>) -> some View {
         HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Liddy").font(.headline)
-                Text(statusLine)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .contentTransition(.opacity)
-                    .animation(DS.Motion.state, value: statusLine)
+            Image(systemName: "rectangle.split.3x3.fill")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(DS.accent)
+                .frame(width: 38, height: 38)
+                .background(DS.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(DS.accent.opacity(0.2), lineWidth: 1))
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Liddy")
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
+                HStack(spacing: 6) {
+                    Circle().fill(statusTint).frame(width: 6, height: 6)
+                    Text(statusLine)
+                        .font(.system(.caption, design: .rounded).weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .contentTransition(.opacity)
+                        .animation(DS.Motion.state, value: statusLine)
+                }
             }
             Spacer(minLength: 8)
             Toggle("Liddy", isOn: enabled)
@@ -69,6 +85,14 @@ struct MenuPanel: View {
                 .labelsHidden()
                 .help(app.config.enabled ? "Pause Liddy" : "Resume Liddy")
         }
+    }
+
+    private var statusTint: Color {
+        if let error = app.status.error, !error.isEmpty { return .orange }
+        if !app.config.enabled { return .secondary }
+        if app.privacyGuard.isActive { return DS.violet }
+        if app.status.rate < 50 { return .orange }
+        return DS.accent
     }
 
     private var statusLine: String {
@@ -127,7 +151,10 @@ struct MenuPanel: View {
                 Text("Tap a zone on your screen, or click one here to try it.").foregroundStyle(.secondary)
             }
         }
-        .font(.caption)
+        .font(.system(.caption, design: .rounded))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(DS.elevated.opacity(0.7), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private func describe(_ r: TapRecord) -> String {
@@ -189,8 +216,10 @@ struct MenuPanel: View {
                 Spacer()
                 Text(app.status.lid.map { "Lid \($0)°" } ?? "").font(.caption).foregroundStyle(.tertiary).monospacedDigit()
             }
-            MotionTrace(detector: app.detector, seconds: 4).frame(height: 30)
+            MotionTrace(detector: app.detector, seconds: 4).frame(height: 34)
         }
+        .padding(10)
+        .background(DS.elevated.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: Privacy Guard
@@ -240,15 +269,15 @@ struct MenuRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: symbol).frame(width: 18).foregroundStyle(hover ? Color.white : .secondary)
+                Image(systemName: symbol).frame(width: 18).foregroundStyle(hover ? DS.accent : .secondary)
                 Text(title)
                 Spacer()
-                if let shortcut { Text(shortcut).foregroundStyle(hover ? Color.white.opacity(0.85) : Color.secondary) }
+                if let shortcut { Text(shortcut).foregroundStyle(hover ? DS.accent : Color.secondary) }
             }
             .font(.body)
-            .foregroundStyle(hover ? Color.white : .primary)
-            .padding(.horizontal, 8).padding(.vertical, 5)
-            .background(hover ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 8).padding(.vertical, 7)
+            .background(hover ? DS.accent.opacity(0.13) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
