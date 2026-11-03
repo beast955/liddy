@@ -2,7 +2,7 @@ import Charts
 import SwiftUI
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case zones, training, detection, permissions, general
+    case zones, training, detection, permissions, general, about
     var id: String { rawValue }
     var title: String { rawValue.capitalized }
     var symbol: String {
@@ -12,6 +12,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .detection: "waveform.path.ecg"
         case .permissions: "lock.shield"
         case .general: "gearshape"
+        case .about: "info.circle"
         }
     }
     var subtitle: String {
@@ -21,6 +22,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .detection: "Tune how Liddy recognizes a tap."
         case .permissions: "Check the access Liddy needs to work."
         case .general: "Set startup and feedback preferences."
+        case .about: "The idea, the craft, and what powers Liddy."
         }
     }
 }
@@ -117,6 +119,7 @@ struct SettingsView: View {
                         case .detection: DetectionPane()
                         case .permissions: PermissionsPane()
                         case .general: GeneralPane()
+                        case .about: AboutPane()
                         }
                     }
                     .formStyle(.grouped)
@@ -273,7 +276,7 @@ private struct PrivacyGuardSection: View {
             Toggle("Mute every microphone", isOn: $app.config.guardMutesMic)
             Toggle("Turn the camera off in meetings", isOn: $app.config.guardStopsCamera)
         } header: {
-            Text("Privacy Guard")
+            Text("Privacy Shield")
         } footer: {
             Text("Hides every screen until you tap this zone again or click. Turns the camera off in Zoom, Microsoft Teams, Webex and Google Meet (Chrome, Edge, Brave or Safari), and turns it back on afterwards.")
         }
@@ -621,7 +624,7 @@ private struct PermissionsPane: View {
                     button: ("Open…", { Permissions.openPrivacyPane("Privacy_ListenEvent") }))
                 row("Automation", "safari",
                     ok: nil,
-                    detail: "Asked the first time Privacy Guard looks for a Google Meet tab in your browser.",
+                    detail: "Asked the first time Privacy Shield looks for a Google Meet tab in your browser.",
                     button: ("Open…", { Permissions.openPrivacyPane("Privacy_Automation") }))
             } footer: {
                 Text("Liddy runs entirely on this Mac. After installing a new build, macOS may ask you to switch Accessibility off and on again.")
@@ -677,6 +680,59 @@ private struct GeneralPane: View {
                 }
             } footer: {
                 Text("Tap gently with a fingertip. Liddy feels the whole laptop move, so there's never a need to press: pressing hard on a display can leave marks.")
+            }
+        }
+    }
+}
+
+// MARK: - About
+
+private struct AboutPane: View {
+    var body: some View {
+        Form {
+            Section {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "rectangle.split.3x3.fill")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundStyle(DS.accent)
+                            .frame(width: 58, height: 58)
+                            .background(DS.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).strokeBorder(DS.accent.opacity(0.22), lineWidth: 1))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Liddy")
+                                .font(.system(.title, design: .rounded).weight(.bold))
+                            Text("A little tap goes a long way.")
+                                .font(.system(.callout, design: .rounded))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Text("Liddy is an independent project exploring a more natural way to interact with a MacBook. Gentle taps on the display become useful actions, using the motion sensors already inside the laptop.")
+                        .font(.system(.body, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 8)
+            }
+
+            Section("Made with") {
+                Label("SwiftUI for the Mac interface", systemImage: "swift")
+                Label("Built-in motion sensors for tap recognition", systemImage: "gyroscope")
+                Label("On-device machine learning", systemImage: "brain")
+            }
+
+            Section("Designed with privacy in mind") {
+                Label("No account required", systemImage: "person.crop.circle")
+                Label("Tap recognition and training data stay on this Mac", systemImage: "lock.shield")
+            }
+
+            Section {
+                LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+                if let repositoryURL = URL(string: "https://github.com/beast955/liddy") {
+                    Link(destination: repositoryURL) {
+                        Label("Liddy on GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                    }
+                }
             }
         }
     }

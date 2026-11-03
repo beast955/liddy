@@ -14,7 +14,7 @@
     <key>LSUIElement</key><true/>
     <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
     <key>NSHighResolutionCapable</key><true/>
-    <key>NSAppleEventsUsageDescription</key><string>Liddy brings your Google Meet tab to the front so Privacy Guard can turn your camera off.</string>
+    <key>NSAppleEventsUsageDescription</key><string>Liddy brings your Google Meet tab to the front so Privacy Shield can turn your camera off.</string>
     <key>NSHumanReadableCopyright</key><string>Zone taps from your MacBook's motion sensor.</string>
 </dict>
 </plist>

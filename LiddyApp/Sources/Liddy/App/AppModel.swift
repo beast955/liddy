@@ -183,7 +183,7 @@ final class AppModel {
     }
 
     /// Developer hooks, only with --test-hooks: `dev.liddy.test` distributed notifications replay a recorded
-    /// tap for a zone ("cmd": "tap", "label": "z0"), toggle Privacy Guard ("guard"), or open Settings ("settings").
+    /// tap for a zone ("cmd": "tap", "label": "z0"), toggle Privacy Shield ("guard"), or open Settings ("settings").
     private func installTestHooks() {
         Log.app.notice("Test hooks enabled")
         testHookObserver = DistributedNotificationCenter.default().addObserver(
@@ -289,13 +289,13 @@ final class AppModel {
         if privacyGuard.isActive {
             if p.rejected == nil && action.kind == .privacyGuard {
                 privacyGuard.release()
-                record(.acted, p.label, p.confidence, "Privacy Guard off")
+                record(.acted, p.label, p.confidence, "Privacy Shield off")
             } else {
-                record(.guarded, p.label, p.confidence, "Ignored while Privacy Guard is on")
+                record(.guarded, p.label, p.confidence, "Ignored while Privacy Shield is on")
             }
             return
         }
-        // Privacy Guard hides the screen and mutes the mic, so a guess must be much surer before it fires.
+        // Privacy Shield hides the screen and mutes the mic, so a guess must be much surer before it fires.
         let floor = action.kind == .privacyGuard ? max(config.minConfidence, 0.85) : config.minConfidence
         let confidence = p.confidence
         if let reason = p.rejected ?? (confidence < floor ? "Not sure which zone" : nil) {

@@ -344,12 +344,12 @@ func actionTests() {
     }
 }
 
-// MARK: - Privacy Guard
+// MARK: - Privacy Shield
 
 @MainActor
 func guardTests() {
-    T.suite = "Privacy Guard"
-    print("\n▶ Privacy Guard (real microphone, screen and camera)")
+    T.suite = "Privacy Shield"
+    print("\n▶ Privacy Shield (real microphone, screen and camera)")
     let pid = ProcessInfo.processInfo.processIdentifier
     let overlayLevel = Int(CGWindowLevelForKey(.screenSaverWindow))
 
@@ -383,7 +383,7 @@ func guardTests() {
         var seen: [String] = []
         let mon = NSEvent.addLocalMonitorForEvents(matching: .any) { e in seen.append("\(e.type.rawValue)@\(e.window?.className ?? "nil")"); return e }
         click(at: center)
-        T.expect(T.wait(2) { !g.isActive }, "click did not release Privacy Guard")
+        T.expect(T.wait(2) { !g.isActive }, "click did not release Privacy Shield")
         if let mon { NSEvent.removeMonitor(mon) }
         let onTop = (CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []).prefix(4)
             .map { "\($0[kCGWindowOwnerName as String] ?? "?") L\($0[kCGWindowLayer as String] ?? "?")" }

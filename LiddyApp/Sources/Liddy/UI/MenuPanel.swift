@@ -98,7 +98,7 @@ struct MenuPanel: View {
     private var statusLine: String {
         if let e = app.status.error, !e.isEmpty { return "Motion sensor unavailable" }
         if app.status.rate < 50 { return "Starting the motion sensor…" }
-        if app.privacyGuard.isActive { return "Privacy Guard is on" }
+        if app.privacyGuard.isActive { return "Privacy Shield is on" }
         if app.calibration != nil { return "Calibrating" }
         if !app.config.enabled { return "Paused" }
         if app.isTraining { return "Learning your taps…" }
@@ -163,7 +163,7 @@ struct MenuPanel: View {
         case .acted: return [zone, r.detail].compactMap { $0 }.joined(separator: " · ")
         case .rejected: return "Not sure which zone"
         case .ignored: return r.detail
-        case .guarded: return "Ignored while Privacy Guard is on"
+        case .guarded: return "Ignored while Privacy Shield is on"
         case .recorded: return r.detail
         case .untrained: return "Tap felt. Calibrate to use it"
         }
@@ -222,12 +222,12 @@ struct MenuPanel: View {
         .background(DS.elevated.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: Privacy Guard
+    // MARK: Privacy Shield
 
     private var privacyGuard: some View {
         let on = app.privacyGuard.isActive
         return Button { app.privacyGuard.toggle() } label: {
-            Label(on ? "Turn Off Privacy Guard" : "Privacy Guard", systemImage: on ? "eye" : "eye.slash")
+            Label(on ? "Turn Off Privacy Shield" : "Privacy Shield", systemImage: on ? "eye" : "eye.slash")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)

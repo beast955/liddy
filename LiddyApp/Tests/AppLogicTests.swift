@@ -155,19 +155,19 @@ func appLogicTests() {
         h.app.endCalibration()
     }
 
-    T.run("Privacy Guard only fires when the recogniser is at least 85% sure") {
+    T.run("Privacy Shield only fires when the recogniser is at least 85% sure") {
         let h = AppHarness(name: "guardconf")
         guard h.train() else { return T.fail("no model") }
         h.app.config.minConfidence = 0.3
         var fired: [Double] = []
         for _ in 0..<40 {
             h.performed.removeAll()
-            h.tap("z3")  // the Privacy Guard zone in the default 2×2 layout
+            h.tap("z3")  // the Privacy Shield zone in the default 2×2 layout
             if h.performed.contains(where: { $0.kind == .privacyGuard }) { fired.append(h.app.lastRecord?.confidence ?? 0) }
             if h.app.privacyGuard.isActive { h.app.privacyGuard.release() }
         }
         T.note("fired \(fired.count)/40, lowest confidence \(fired.min().map { String(format: "%.2f", $0) } ?? "-")")
-        T.expect(fired.allSatisfy { $0 >= 0.85 }, "Privacy Guard fired below 85% confidence")
+        T.expect(fired.allSatisfy { $0 >= 0.85 }, "Privacy Shield fired below 85% confidence")
     }
 
     T.run("confidence floor: unsure taps say so instead of acting") {
@@ -248,7 +248,7 @@ func appLogicTests() {
         T.expect(h.app.lastRecord?.outcome == .untrained && h.performed.isEmpty, "untrained tap outcome \(String(describing: h.app.lastRecord?.outcome))")
     }
 
-    T.run("Privacy Guard: other zones ignored, guard zone releases it") {
+    T.run("Privacy Shield: other zones ignored, guard zone releases it") {
         let h = AppHarness(name: "guard")
         guard h.train() else { return T.fail("no model") }
         let guardZone = (0..<4).first { h.app.action(for: $0).kind == .privacyGuard }!
@@ -260,7 +260,7 @@ func appLogicTests() {
         T.expect(h.performed.isEmpty, "zone actions ran while guarded: \(h.performed.map(\.title))")
         T.expect(h.app.recent.prefix(5).allSatisfy { $0.outcome == .guarded || $0.outcome == .rejected }, "taps while guarded not marked guarded")
         for _ in 0..<5 where h.app.privacyGuard.isActive { h.tap(zoneLabel(guardZone)) }
-        T.expect(!h.app.privacyGuard.isActive, "tapping the guard zone did not release Privacy Guard")
+        T.expect(!h.app.privacyGuard.isActive, "tapping the guard zone did not release Privacy Shield")
     }
 
     T.run("full calibration flow: taps → noise → train → done") {

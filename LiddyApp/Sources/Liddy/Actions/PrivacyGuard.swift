@@ -2,7 +2,7 @@ import AppKit
 import Observation
 import SwiftUI
 
-/// Privacy Guard: blur every screen, mute every microphone and, if a meeting is using the camera,
+/// Privacy Shield: blur every screen, mute every microphone and, if a meeting is using the camera,
 /// turn the camera off in that meeting app. Tap the Privacy zone again or click to undo all of it.
 @MainActor @Observable
 final class PrivacyGuard {
@@ -39,7 +39,7 @@ final class PrivacyGuard {
             if overlay == nil { overlay = PrivacyOverlayController(guardState: self) }
             overlay?.show()
         }
-        Log.action.notice("Privacy Guard on")
+        Log.action.notice("Privacy Shield on")
 
         // 2. Silence every microphone.
         if muteMic {
@@ -84,7 +84,7 @@ final class PrivacyGuard {
         reassertTimer = nil
         overlay?.hide()
         if muter.isEngaged { muter.restore() }
-        Log.action.notice("Privacy Guard off")
+        Log.action.notice("Privacy Shield off")
         let target = cameraTarget, previous = previousApp
         cameraTarget = nil
         mic = .idle
@@ -208,7 +208,7 @@ struct PrivacyOverlayView: View {
                     .font(.system(size: 52, weight: .light))
                     .foregroundStyle(.white)
                     .symbolEffect(.bounce, value: shown)
-                Text("Privacy Guard is on")
+                Text("Privacy Shield is on")
                     .font(.system(size: 34, weight: .semibold))
                     .foregroundStyle(.white)
                 if let since = guardState.since {
@@ -228,7 +228,7 @@ struct PrivacyOverlayView: View {
             }
             .frame(width: 420)
             .floatingGlass(cornerRadius: 18)
-            Text("Tap your Privacy Guard zone again, or click anywhere, to come back.")
+            Text("Tap your Privacy Shield zone again, or click anywhere, to come back.")
                 .font(.callout)
                 .foregroundStyle(.white.opacity(0.6))
         }

@@ -45,7 +45,7 @@ extension NSScreen {
 
 extension View {
     /// Liquid Glass on macOS 26+, a regular material before. Only for controls floating over full-screen
-    /// surfaces (calibration, Privacy Guard, tap feedback): never on settings content.
+    /// surfaces (calibration, Privacy Shield, tap feedback): never on settings content.
     @ViewBuilder
     func floatingGlass(cornerRadius: CGFloat) -> some View {
         if #available(macOS 26, *) {

@@ -15,7 +15,7 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
         case .nextTrack: "Next Track"
         case .previousTrack: "Previous Track"
         case .openApp: "Open App"
-        case .privacyGuard: "Privacy Guard"
+        case .privacyGuard: "Privacy Shield"
         }
     }
 
@@ -74,7 +74,7 @@ enum ActionKind: String, Codable, CaseIterable, Identifiable {
     var needsAccessibility: Bool {
         switch self {
         case .desktopLeft, .desktopRight, .newNote, .playPause, .nextTrack, .previousTrack: true
-        // Privacy Guard's blur and mic mute work without it; only the camera shortcut needs it (reported in the overlay).
+        // Privacy Shield's blur and mic mute work without it; only the camera shortcut needs it (reported in the overlay).
         case .none, .openApp, .privacyGuard: false
         }
     }

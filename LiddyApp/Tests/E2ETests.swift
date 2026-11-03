@@ -161,7 +161,7 @@ func endToEndTests() {
         T.expect(last()["detail"] as? String == "Nothing", "last \(last())")
     }
 
-    T.run("gated and guarded taps don't act; guard zone toggles Privacy Guard") {
+    T.run("gated and guarded taps don't act; guard zone toggles Privacy Shield") {
         let mic = micState()
         send("tap", "z3")
         T.expect(T.wait(4) { (status()["guardActive"] as? Bool) == true }, "guard did not engage from its zone")
@@ -180,7 +180,7 @@ func endToEndTests() {
         T.expect(windows(pid: pid).allSatisfy { $0.layer != overlayLevel }, "overlay left on screen")
     }
 
-    T.run("Privacy Guard dismisses with a click") {
+    T.run("Privacy Shield dismisses with a click") {
         send("guard")
         T.expect(T.wait(4) { (status()["guardActive"] as? Bool) == true }, "guard hook did not engage")
         T.sleep(0.8)
