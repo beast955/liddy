@@ -47,6 +47,8 @@ if [ ! -f "$BUILD/AppIcon.icns" ] || [ scripts/make_icon.swift -nt "$BUILD/AppIc
   iconutil -c icns "$BUILD/AppIcon.iconset" -o "$BUILD/AppIcon.icns"
 fi
 cp "$BUILD/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+# Finder/file-provider metadata from workspace files is not valid inside a signed app bundle.
+xattr -cr "$APP"
 if [ "$SIGN_IDENTITY" = "-" ]; then
   codesign --force --sign - --identifier dev.liddy.Liddy "$APP"
 else

@@ -2,7 +2,7 @@ import Charts
 import SwiftUI
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case zones, training, detection, permissions, general
+    case zones, training, detection, permissions, general, about
     var id: String { rawValue }
     var title: String { rawValue.capitalized }
     var symbol: String {
@@ -12,6 +12,17 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .detection: "waveform.path.ecg"
         case .permissions: "lock.shield"
         case .general: "gearshape"
+        case .about: "info.circle"
+        }
+    }
+    var subtitle: String {
+        switch self {
+        case .zones: "Choose what each screen zone does."
+        case .training: "Review tap examples and recognition quality."
+        case .detection: "Tune how Liddy recognizes a tap."
+        case .permissions: "Check the access Liddy needs to work."
+        case .general: "Set startup and feedback preferences."
+        case .about: "The idea, the craft, and what powers Liddy."
         }
     }
 }
@@ -24,24 +35,144 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            List(SettingsPane.allCases, selection: pane) { p in
-                Label(p.title, systemImage: p.symbol).tag(p)
+        let current = pane.wrappedValue ?? .zones
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 11) {
+                    Image(systemName: "rectangle.split.3x3.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(DS.accent)
+                        .frame(width: 38, height: 38)
+                        .background(DS.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(DS.accent.opacity(0.22), lineWidth: 1))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Liddy")
+                            .font(.system(.title3, design: .rounded).weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text("TAP CONTROL")
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .tracking(1.2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.top, 18)
+                .padding(.bottom, 18)
+
+                Rectangle().fill(DS.hairline).frame(height: 1).padding(.bottom, 12)
+
+                VStack(spacing: 5) {
+                    ForEach(SettingsPane.allCases) { item in
+                        SettingsNavRow(pane: item, selected: current == item) {
+                            pane.wrappedValue = item
+                        }
+                    }
+                }
+
+                Spacer(minLength: 16)
+
+                HStack(spacing: 7) {
+                    Circle().fill(DS.accent).frame(width: 6, height: 6)
+                    Text("PRIVATE ON THIS MAC")
+                        .font(.system(size: 9, weight: .semibold, design: .rounded))
+                        .tracking(0.7)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 16)
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 190, max: 220)
-        } detail: {
-            Group {
-                switch pane.wrappedValue ?? .zones {
-                case .zones: ZonesPane()
-                case .training: TrainingPane()
-                case .detection: DetectionPane()
-                case .permissions: PermissionsPane()
-                case .general: GeneralPane()
+            .padding(.horizontal, 12)
+            .frame(width: 212)
+            .frame(maxHeight: .infinity)
+            .background(DS.sidebar)
+
+            Rectangle().fill(DS.hairline).frame(width: 1).ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Image(systemName: current.symbol)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(DS.accent)
+                        .frame(width: 40, height: 40)
+                        .background(DS.accent.opacity(0.11), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(current.title)
+                            .font(.system(.title2, design: .rounded).weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text(current.subtitle)
+                            .font(.system(.callout, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+
+                Rectangle().fill(DS.hairline).frame(height: 1)
+
+                ZStack {
+                    DS.canvas
+                    Group {
+                        switch current {
+                        case .zones: ZonesPane()
+                        case .training: TrainingPane()
+                        case .detection: DetectionPane()
+                        case .permissions: PermissionsPane()
+                        case .general: GeneralPane()
+                        case .about: AboutPane()
+                        }
+                    }
+                    .formStyle(.grouped)
+                    .scrollContentBackground(.hidden)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
                 }
             }
-            .formStyle(.grouped)
-            .navigationTitle((pane.wrappedValue ?? .zones).title)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(DS.canvas)
         }
+        .background(DS.canvas)
+        .tint(DS.accent)
+        .preferredColorScheme(.dark)
+    }
+}
+
+
+// MARK: - Sidebar navigation
+
+private struct SettingsNavRow: View {
+    let pane: SettingsPane
+    let selected: Bool
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 11) {
+                Image(systemName: pane.symbol)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(selected || hovered ? DS.accent : Color.secondary)
+                    .frame(width: 19)
+                Text(pane.title)
+                    .font(.system(.body, design: .rounded).weight(selected ? .semibold : .medium))
+                    .foregroundStyle(selected ? .primary : Color.secondary)
+                Spacer(minLength: 0)
+                if selected {
+                    Capsule().fill(DS.accent).frame(width: 3, height: 18)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(selected ? DS.accent.opacity(0.13) : hovered ? DS.elevated.opacity(0.7) : .clear,
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(selected ? DS.accent.opacity(0.20) : .clear, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -97,7 +228,7 @@ private struct ZonesPane: View {
                 }
             }
 
-            if current.kind == .privacyGuard { PrivacyGuardSection() }
+            if current.kind == .privacyShield { PrivacyShieldSection() }
 
             Section {
                 Picker("Grid", selection: Binding(get: { app.grid }, set: { g in if g != app.grid { pendingGrid = g } })) {
@@ -136,16 +267,16 @@ private struct ZonesPane: View {
     }
 }
 
-private struct PrivacyGuardSection: View {
+private struct PrivacyShieldSection: View {
     @Environment(AppModel.self) private var app
 
     var body: some View {
         @Bindable var app = app
         Section {
-            Toggle("Mute every microphone", isOn: $app.config.guardMutesMic)
-            Toggle("Turn the camera off in meetings", isOn: $app.config.guardStopsCamera)
+            Toggle("Mute every microphone", isOn: $app.config.shieldMutesMic)
+            Toggle("Turn the camera off in meetings", isOn: $app.config.shieldStopsCamera)
         } header: {
-            Text("Privacy Guard")
+            Text("Privacy Shield")
         } footer: {
             Text("Hides every screen until you tap this zone again or click. Turns the camera off in Zoom, Microsoft Teams, Webex and Google Meet (Chrome, Edge, Brave or Safari), and turns it back on afterwards.")
         }
@@ -493,7 +624,7 @@ private struct PermissionsPane: View {
                     button: ("Open…", { Permissions.openPrivacyPane("Privacy_ListenEvent") }))
                 row("Automation", "safari",
                     ok: nil,
-                    detail: "Asked the first time Privacy Guard looks for a Google Meet tab in your browser.",
+                    detail: "Asked the first time Privacy Shield looks for a Google Meet tab in your browser.",
                     button: ("Open…", { Permissions.openPrivacyPane("Privacy_Automation") }))
             } footer: {
                 Text("Liddy runs entirely on this Mac. After installing a new build, macOS may ask you to switch Accessibility off and on again.")
@@ -549,6 +680,59 @@ private struct GeneralPane: View {
                 }
             } footer: {
                 Text("Tap gently with a fingertip. Liddy feels the whole laptop move, so there's never a need to press: pressing hard on a display can leave marks.")
+            }
+        }
+    }
+}
+
+// MARK: - About
+
+private struct AboutPane: View {
+    var body: some View {
+        Form {
+            Section {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "rectangle.split.3x3.fill")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundStyle(DS.accent)
+                            .frame(width: 58, height: 58)
+                            .background(DS.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).strokeBorder(DS.accent.opacity(0.22), lineWidth: 1))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Liddy")
+                                .font(.system(.title, design: .rounded).weight(.bold))
+                            Text("A little tap goes a long way.")
+                                .font(.system(.callout, design: .rounded))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Text("Liddy is an independent project exploring a more natural way to interact with a MacBook. Gentle taps on the display become useful actions, using the motion sensors already inside the laptop.")
+                        .font(.system(.body, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 8)
+            }
+
+            Section("Made with") {
+                Label("SwiftUI for the Mac interface", systemImage: "swift")
+                Label("Built-in motion sensors for tap recognition", systemImage: "gyroscope")
+                Label("On-device machine learning", systemImage: "brain")
+            }
+
+            Section("Designed with privacy in mind") {
+                Label("No account required", systemImage: "person.crop.circle")
+                Label("Tap recognition and training data stay on this Mac", systemImage: "lock.shield")
+            }
+
+            Section {
+                LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+                if let repositoryURL = URL(string: "https://github.com/beast955/liddy") {
+                    Link(destination: repositoryURL) {
+                        Label("Liddy on GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                    }
+                }
             }
         }
     }

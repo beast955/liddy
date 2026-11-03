@@ -67,7 +67,7 @@ enum Permissions {
 enum ActionRunner {
     /// Runs a zone's action. Returns an error message for the UI if it could not run.
     @discardableResult
-    static func perform(_ action: ZoneAction, guardController: PrivacyGuard) -> String? {
+    static func perform(_ action: ZoneAction, shieldController: PrivacyShield) -> String? {
         if action.kind.needsAccessibility && !Permissions.accessibility {
             Permissions.requestAccessibilityOnce()
             return "Liddy needs Accessibility permission to do this."
@@ -92,8 +92,8 @@ enum ActionRunner {
         case .openApp:
             guard let id = action.appBundleID else { return "Choose an app for this zone in Settings." }
             openApp(bundleID: id, then: nil)
-        case .privacyGuard:
-            guardController.toggle()
+        case .privacyShield:
+            shieldController.toggle()
         }
         return nil
     }

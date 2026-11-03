@@ -218,22 +218,22 @@ func actionTests() {
         T.run("accessibility") { throw T.Skip(reason: "this process has no Accessibility permission") }
         return
     }
-    let guardStub = PrivacyGuard(presentsOverlay: false)
+    let guardStub = PrivacyShield(presentsOverlay: false)
 
     T.run("every action posts the right key events (caught and swallowed)") {
         guard let catcher = EventCatcher(marker: 0x11DA7A9) else { throw T.Skip(reason: "could not create an event tap") }
         defer { catcher.stop(); KeySender.eventMarker = 0 }
         KeySender.eventMarker = catcher.marker
         let cases: [(String, () -> Void, (EventCatcher.Caught) -> Bool)] = [
-            ("Desktop Left = ⌃←", { _ = ActionRunner.perform(ZoneAction(kind: .desktopLeft), guardController: guardStub) },
+            ("Desktop Left = ⌃←", { _ = ActionRunner.perform(ZoneAction(kind: .desktopLeft), shieldController: guardStub) },
              { $0.type == 10 && $0.key == 123 && $0.flags.contains(.maskControl) && !$0.flags.contains(.maskCommand) }),
-            ("Desktop Right = ⌃→", { _ = ActionRunner.perform(ZoneAction(kind: .desktopRight), guardController: guardStub) },
+            ("Desktop Right = ⌃→", { _ = ActionRunner.perform(ZoneAction(kind: .desktopRight), shieldController: guardStub) },
              { $0.type == 10 && $0.key == 124 && $0.flags.contains(.maskControl) }),
-            ("Play/Pause media key", { _ = ActionRunner.perform(ZoneAction(kind: .playPause), guardController: guardStub) },
+            ("Play/Pause media key", { _ = ActionRunner.perform(ZoneAction(kind: .playPause), shieldController: guardStub) },
              { $0.type == 14 && ($0.data1 >> 16) == 16 && (($0.data1 >> 8) & 0xFF) == 0xA }),
-            ("Next media key", { _ = ActionRunner.perform(ZoneAction(kind: .nextTrack), guardController: guardStub) },
+            ("Next media key", { _ = ActionRunner.perform(ZoneAction(kind: .nextTrack), shieldController: guardStub) },
              { $0.type == 14 && ($0.data1 >> 16) == 17 }),
-            ("Previous media key", { _ = ActionRunner.perform(ZoneAction(kind: .previousTrack), guardController: guardStub) },
+            ("Previous media key", { _ = ActionRunner.perform(ZoneAction(kind: .previousTrack), shieldController: guardStub) },
              { $0.type == 14 && ($0.data1 >> 16) == 18 }),
             ("Zoom camera = ⌘⇧V", { KeySender.press(.v, flags: [.maskCommand, .maskShift]) },
              { $0.type == 10 && $0.key == 9 && $0.flags.contains([.maskCommand, .maskShift]) }),
@@ -264,15 +264,15 @@ func actionTests() {
         let conn = unsafeBitCast(c, to: GetConn.self)()
         let space = { unsafeBitCast(g, to: GetSpace.self)(conn) }
         let start = space()
-        _ = ActionRunner.perform(ZoneAction(kind: .desktopRight), guardController: guardStub)
+        _ = ActionRunner.perform(ZoneAction(kind: .desktopRight), shieldController: guardStub)
         let movedRight = T.wait(2.5) { space() != start }
         T.sleep(0.6)
         let afterRight = space()
-        _ = ActionRunner.perform(ZoneAction(kind: .desktopLeft), guardController: guardStub)
+        _ = ActionRunner.perform(ZoneAction(kind: .desktopLeft), shieldController: guardStub)
         let movedLeft = T.wait(2.5) { space() != afterRight }
         T.sleep(0.6)
         if !movedRight && movedLeft {  // started on the right-most Space: return
-            _ = ActionRunner.perform(ZoneAction(kind: .desktopRight), guardController: guardStub)
+            _ = ActionRunner.perform(ZoneAction(kind: .desktopRight), shieldController: guardStub)
             T.wait(2.5) { space() == start }
         }
         T.note("Spaces: start \(start), after right \(afterRight), after left \(space())")
@@ -287,10 +287,10 @@ func actionTests() {
         guard let before = osa(#"tell application id "com.spotify.client" to player state as string"#) else {
             throw T.Skip(reason: "no Automation access to Spotify")
         }
-        _ = ActionRunner.perform(ZoneAction(kind: .playPause), guardController: guardStub)
+        _ = ActionRunner.perform(ZoneAction(kind: .playPause), shieldController: guardStub)
         let toggled = T.wait(3) { osa(#"tell application id "com.spotify.client" to player state as string"#) != before }
         let mid = osa(#"tell application id "com.spotify.client" to player state as string"#) ?? "?"
-        _ = ActionRunner.perform(ZoneAction(kind: .playPause), guardController: guardStub)
+        _ = ActionRunner.perform(ZoneAction(kind: .playPause), shieldController: guardStub)
         let restored = T.wait(3) { osa(#"tell application id "com.spotify.client" to player state as string"#) == before }
         T.note("Spotify: \(before) → \(mid) → restored \(restored)")
         T.expect(toggled, "media key did not change Spotify's state (\(before))")
@@ -301,18 +301,18 @@ func actionTests() {
         let id = "com.apple.calculator"
         let wasRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: id).isEmpty
         let front = { NSWorkspace.shared.frontmostApplication?.bundleIdentifier }
-        _ = ActionRunner.perform(ZoneAction(kind: .openApp, appBundleID: id, appName: "Calculator"), guardController: guardStub)
+        _ = ActionRunner.perform(ZoneAction(kind: .openApp, appBundleID: id, appName: "Calculator"), shieldController: guardStub)
         T.expect(T.wait(6) { front() == id }, "Calculator not frontmost after launch (front: \(front() ?? "-"))")
         NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.finder").first?.activate()
         T.wait(2) { front() == "com.apple.finder" }
-        _ = ActionRunner.perform(ZoneAction(kind: .openApp, appBundleID: id, appName: "Calculator"), guardController: guardStub)
+        _ = ActionRunner.perform(ZoneAction(kind: .openApp, appBundleID: id, appName: "Calculator"), shieldController: guardStub)
         T.expect(T.wait(4) { front() == id }, "running Calculator not brought forward (front: \(front() ?? "-"))")
         NSRunningApplication.runningApplications(withBundleIdentifier: id).first?.hide()
         T.wait(2) { front() != id }
-        _ = ActionRunner.perform(ZoneAction(kind: .openApp, appBundleID: id, appName: "Calculator"), guardController: guardStub)
+        _ = ActionRunner.perform(ZoneAction(kind: .openApp, appBundleID: id, appName: "Calculator"), shieldController: guardStub)
         T.expect(T.wait(4) { front() == id && NSRunningApplication.runningApplications(withBundleIdentifier: id).first?.isHidden == false },
                  "hidden Calculator not unhidden and focused")
-        _ = ActionRunner.perform(ZoneAction(kind: .openApp, appBundleID: "com.invalid.nothing"), guardController: guardStub)  // must not crash
+        _ = ActionRunner.perform(ZoneAction(kind: .openApp, appBundleID: "com.invalid.nothing"), shieldController: guardStub)  // must not crash
         if !wasRunning { NSRunningApplication.runningApplications(withBundleIdentifier: id).first?.terminate() }
     }
 
@@ -321,7 +321,7 @@ func actionTests() {
         let before = osa(idsScript, timeout: 30)
         if before == nil { T.note("no Automation access to Notes: checking focus only") }
         let wasRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Notes").isEmpty
-        _ = ActionRunner.perform(ZoneAction(kind: .newNote), guardController: guardStub)
+        _ = ActionRunner.perform(ZoneAction(kind: .newNote), shieldController: guardStub)
         T.expect(T.wait(8) { NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "com.apple.Notes" }, "Notes not frontmost")
         T.sleep(1.5)
         guard let before, let after = osa(idsScript, timeout: 30) else { return }
@@ -344,12 +344,12 @@ func actionTests() {
     }
 }
 
-// MARK: - Privacy Guard
+// MARK: - Privacy Shield
 
 @MainActor
-func guardTests() {
-    T.suite = "Privacy Guard"
-    print("\n▶ Privacy Guard (real microphone, screen and camera)")
+func privacyShieldTests() {
+    T.suite = "Privacy Shield"
+    print("\n▶ Privacy Shield (real microphone, screen and camera)")
     let pid = ProcessInfo.processInfo.processIdentifier
     let overlayLevel = Int(CGWindowLevelForKey(.screenSaverWindow))
 
@@ -370,7 +370,7 @@ func guardTests() {
 
     T.run("engage: blur on every screen, mic muted, camera idle; click dismisses; mic restored") {
         let before = micState()
-        let g = PrivacyGuard(presentsOverlay: true)
+        let g = PrivacyShield(presentsOverlay: true)
         g.engage()
         T.sleep(0.6)
         let overlays = windows(pid: pid).filter { $0.layer == overlayLevel }
@@ -383,7 +383,7 @@ func guardTests() {
         var seen: [String] = []
         let mon = NSEvent.addLocalMonitorForEvents(matching: .any) { e in seen.append("\(e.type.rawValue)@\(e.window?.className ?? "nil")"); return e }
         click(at: center)
-        T.expect(T.wait(2) { !g.isActive }, "click did not release Privacy Guard")
+        T.expect(T.wait(2) { !g.isActive }, "click did not release Privacy Shield")
         if let mon { NSEvent.removeMonitor(mon) }
         let onTop = (CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []).prefix(4)
             .map { "\($0[kCGWindowOwnerName as String] ?? "?") L\($0[kCGWindowLayer as String] ?? "?")" }
@@ -396,7 +396,7 @@ func guardTests() {
 
     T.run("toggle twice quickly leaves everything restored") {
         let before = micState()
-        let g = PrivacyGuard(presentsOverlay: true)
+        let g = PrivacyShield(presentsOverlay: true)
         for _ in 0..<5 { g.toggle(); T.sleep(0.05); g.toggle(); T.sleep(0.05) }
         T.sleep(0.8)
         T.expect(!g.isActive && micState() == before, "state after rapid toggles: active \(g.isActive)")
@@ -422,7 +422,7 @@ func guardTests() {
         session.startRunning()
         defer { session.stopRunning() }
         T.expect(T.wait(4) { Cameras.anyRunning() }, "Cameras.anyRunning() did not see our capture session")
-        let g = PrivacyGuard(presentsOverlay: false)
+        let g = PrivacyShield(presentsOverlay: false)
         g.muteMic = false
         g.engage()
         T.expect(T.wait(6) { g.camera != .checking }, "camera check hung")

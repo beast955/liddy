@@ -7,9 +7,15 @@ import SwiftUI
 /// drawn at its real proportions, split into zones by hairlines) and the ripple that answers every tap.
 enum DS {
     static let space: (xs: CGFloat, s: CGFloat, m: CGFloat, l: CGFloat, xl: CGFloat) = (4, 8, 12, 20, 32)
-    /// The drawn display is always a dark panel, in light and dark mode alike, as the real screen is.
-    static let screen = Color(red: 0.075, green: 0.078, blue: 0.09)
-    static let hairline = Color.white.opacity(0.12)
+    /// Dark graphite surfaces keep the app visually consistent with the Liddy icon.
+    static let canvas = Color(red: 0.025, green: 0.035, blue: 0.060)
+    static let sidebar = Color(red: 0.040, green: 0.052, blue: 0.082)
+    static let panel = Color(red: 0.065, green: 0.082, blue: 0.125)
+    static let elevated = Color(red: 0.090, green: 0.112, blue: 0.165)
+    static let screen = Color(red: 0.035, green: 0.050, blue: 0.088)
+    static let accent = Color(red: 0.24, green: 0.79, blue: 0.98)
+    static let violet = Color(red: 0.55, green: 0.47, blue: 0.98)
+    static let hairline = Color(red: 0.38, green: 0.53, blue: 0.72).opacity(0.26)
 
     enum Motion {
         static let feedback = Animation.snappy(duration: 0.12)
@@ -39,7 +45,7 @@ extension NSScreen {
 
 extension View {
     /// Liquid Glass on macOS 26+, a regular material before. Only for controls floating over full-screen
-    /// surfaces (calibration, Privacy Guard, tap feedback): never on settings content.
+    /// surfaces (calibration, Privacy Shield, tap feedback): never on settings content.
     @ViewBuilder
     func floatingGlass(cornerRadius: CGFloat) -> some View {
         if #available(macOS 26, *) {

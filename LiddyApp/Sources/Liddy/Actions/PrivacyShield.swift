@@ -2,10 +2,10 @@ import AppKit
 import Observation
 import SwiftUI
 
-/// Privacy Guard: blur every screen, mute every microphone and, if a meeting is using the camera,
+/// Privacy Shield: blur every screen, mute every microphone and, if a meeting is using the camera,
 /// turn the camera off in that meeting app. Tap the Privacy zone again or click to undo all of it.
 @MainActor @Observable
-final class PrivacyGuard {
+final class PrivacyShield {
     enum MicState: Equatable { case idle, muted(Int), unavailable, skipped }
     enum CameraState: Equatable { case idle, checking, notInUse, turnedOff(String), stillOn(String?), needsAccessibility, skipped }
 
@@ -36,10 +36,10 @@ final class PrivacyGuard {
 
         // 1. Hide the screen immediately.
         if presentsOverlay {
-            if overlay == nil { overlay = PrivacyOverlayController(guardState: self) }
+            if overlay == nil { overlay = PrivacyOverlayController(shieldState: self) }
             overlay?.show()
         }
-        Log.action.notice("Privacy Guard on")
+        Log.action.notice("Privacy Shield on")
 
         // 2. Silence every microphone.
         if muteMic {
@@ -84,7 +84,7 @@ final class PrivacyGuard {
         reassertTimer = nil
         overlay?.hide()
         if muter.isEngaged { muter.restore() }
-        Log.action.notice("Privacy Guard off")
+        Log.action.notice("Privacy Shield off")
         let target = cameraTarget, previous = previousApp
         cameraTarget = nil
         mic = .idle
@@ -126,9 +126,9 @@ private final class ClickThroughHostingView<Content: View>: NSHostingView<Conten
 @MainActor
 final class PrivacyOverlayController {
     private var panels: [NSPanel] = []
-    private let guardState: PrivacyGuard
+    private let shieldState: PrivacyShield
 
-    init(guardState: PrivacyGuard) { self.guardState = guardState }
+    init(shieldState: PrivacyShield) { self.shieldState = shieldState }
 
     func show() {
         hideNow()
@@ -141,7 +141,7 @@ final class PrivacyOverlayController {
             panel.hasShadow = false
             panel.isMovable = false
             panel.hidesOnDeactivate = false
-            panel.onClick = { [weak guardState] in guardState?.release() }
+            panel.onClick = { [weak shieldState] in shieldState?.release() }
             panel.appearance = NSAppearance(named: .darkAqua)
 
             let blur = NSVisualEffectView(frame: NSRect(origin: .zero, size: screen.frame.size))
@@ -151,7 +151,7 @@ final class PrivacyOverlayController {
             blur.appearance = NSAppearance(named: .darkAqua)
             blur.autoresizingMask = [.width, .height]
 
-            let host = ClickThroughHostingView(rootView: PrivacyOverlayView(guardState: guardState, isPrimary: screen == NSScreen.main))
+            let host = ClickThroughHostingView(rootView: PrivacyOverlayView(shieldState: shieldState, isPrimary: screen == NSScreen.main))
             host.frame = blur.bounds
             host.autoresizingMask = [.width, .height]
             blur.addSubview(host)
@@ -186,7 +186,7 @@ final class PrivacyOverlayController {
 }
 
 struct PrivacyOverlayView: View {
-    let guardState: PrivacyGuard
+    let shieldState: PrivacyShield
     let isPrimary: Bool
     @State private var shown = false
 
@@ -208,10 +208,10 @@ struct PrivacyOverlayView: View {
                     .font(.system(size: 52, weight: .light))
                     .foregroundStyle(.white)
                     .symbolEffect(.bounce, value: shown)
-                Text("Privacy Guard is on")
+                Text("Privacy Shield is on")
                     .font(.system(size: 34, weight: .semibold))
                     .foregroundStyle(.white)
-                if let since = guardState.since {
+                if let since = shieldState.since {
                     TimelineView(.periodic(from: since, by: 1)) { ctx in
                         Text("for \(Duration.seconds(ctx.date.timeIntervalSince(since)).formatted(.time(pattern: .minuteSecond)))")
                             .font(.title3).monospacedDigit()
@@ -228,7 +228,7 @@ struct PrivacyOverlayView: View {
             }
             .frame(width: 420)
             .floatingGlass(cornerRadius: 18)
-            Text("Tap your Privacy Guard zone again, or click anywhere, to come back.")
+            Text("Tap your Privacy Shield zone again, or click anywhere, to come back.")
                 .font(.callout)
                 .foregroundStyle(.white.opacity(0.6))
         }
@@ -260,10 +260,10 @@ struct PrivacyOverlayView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var micSymbol: String { guardState.mic == .skipped ? "mic" : "mic.slash" }
+    private var micSymbol: String { shieldState.mic == .skipped ? "mic" : "mic.slash" }
 
     private var micText: String {
-        switch guardState.mic {
+        switch shieldState.mic {
         case .muted(let n): n == 1 ? "Microphone muted" : "\(n) microphones muted"
         case .unavailable: "Couldn't mute the microphone"
         case .skipped: "Microphone left on (your setting)"
@@ -272,7 +272,7 @@ struct PrivacyOverlayView: View {
     }
 
     private var micTone: Tone {
-        switch guardState.mic {
+        switch shieldState.mic {
         case .muted: .done
         case .unavailable: .warn
         case .skipped: .neutral
@@ -280,10 +280,10 @@ struct PrivacyOverlayView: View {
         }
     }
 
-    private var cameraSymbol: String { guardState.camera == .notInUse || guardState.camera == .skipped ? "video" : "video.slash" }
+    private var cameraSymbol: String { shieldState.camera == .notInUse || shieldState.camera == .skipped ? "video" : "video.slash" }
 
     private var cameraText: String {
-        switch guardState.camera {
+        switch shieldState.camera {
         case .checking, .idle: "Checking the camera…"
         case .notInUse: "Camera isn't in use"
         case .turnedOff(let app): "Camera turned off in \(app)"
@@ -294,7 +294,7 @@ struct PrivacyOverlayView: View {
     }
 
     private var cameraTone: Tone {
-        switch guardState.camera {
+        switch shieldState.camera {
         case .checking, .idle: .working
         case .notInUse, .turnedOff: .done
         case .stillOn, .needsAccessibility: .warn

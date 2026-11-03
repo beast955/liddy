@@ -11,7 +11,7 @@ struct MenuBarLabel: View {
     }
 
     private var symbol: String {
-        if app.privacyGuard.isActive { return "eye.slash.fill" }
+        if app.privacyShield.isActive { return "eye.slash.fill" }
         if app.calibration != nil { return "scope" }
         if !app.config.enabled { return "hand.raised.slash" }
         return app.tapFlash ? "hand.tap.fill" : "hand.tap"
@@ -37,7 +37,7 @@ struct MenuPanel: View {
                 firstRun.padding(.horizontal, 14)
             }
             motion.padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 12)
-            privacyGuard.padding(.horizontal, 14).padding(.bottom, 10)
+            privacyShield.padding(.horizontal, 14).padding(.bottom, 10)
             Divider().padding(.horizontal, 8)
             VStack(spacing: 0) {
                 MenuRow(title: app.isTrained ? "Calibrate Again…" : "Calibrate…", symbol: "scope") { dismiss(); app.startCalibration() }
@@ -48,20 +48,36 @@ struct MenuPanel: View {
             }
             .padding(6)
         }
-        .frame(width: 320)
+        .padding(.vertical, 8)
+        .frame(width: 342)
+        .background(DS.panel, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(DS.hairline, lineWidth: 1))
+        .tint(DS.accent)
+        .preferredColorScheme(.dark)
     }
 
     // MARK: Header
 
     private func header(enabled: Binding<Bool>) -> some View {
         HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Liddy").font(.headline)
-                Text(statusLine)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .contentTransition(.opacity)
-                    .animation(DS.Motion.state, value: statusLine)
+            Image(systemName: "rectangle.split.3x3.fill")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(DS.accent)
+                .frame(width: 38, height: 38)
+                .background(DS.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(DS.accent.opacity(0.2), lineWidth: 1))
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Liddy")
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
+                HStack(spacing: 6) {
+                    Circle().fill(statusTint).frame(width: 6, height: 6)
+                    Text(statusLine)
+                        .font(.system(.caption, design: .rounded).weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .contentTransition(.opacity)
+                        .animation(DS.Motion.state, value: statusLine)
+                }
             }
             Spacer(minLength: 8)
             Toggle("Liddy", isOn: enabled)
@@ -71,10 +87,18 @@ struct MenuPanel: View {
         }
     }
 
+    private var statusTint: Color {
+        if let error = app.status.error, !error.isEmpty { return .orange }
+        if !app.config.enabled { return .secondary }
+        if app.privacyShield.isActive { return DS.violet }
+        if app.status.rate < 50 { return .orange }
+        return DS.accent
+    }
+
     private var statusLine: String {
         if let e = app.status.error, !e.isEmpty { return "Motion sensor unavailable" }
         if app.status.rate < 50 { return "Starting the motion sensor…" }
-        if app.privacyGuard.isActive { return "Privacy Guard is on" }
+        if app.privacyShield.isActive { return "Privacy Shield is on" }
         if app.calibration != nil { return "Calibrating" }
         if !app.config.enabled { return "Paused" }
         if app.isTraining { return "Learning your taps…" }
@@ -127,7 +151,10 @@ struct MenuPanel: View {
                 Text("Tap a zone on your screen, or click one here to try it.").foregroundStyle(.secondary)
             }
         }
-        .font(.caption)
+        .font(.system(.caption, design: .rounded))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(DS.elevated.opacity(0.7), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private func describe(_ r: TapRecord) -> String {
@@ -136,7 +163,7 @@ struct MenuPanel: View {
         case .acted: return [zone, r.detail].compactMap { $0 }.joined(separator: " · ")
         case .rejected: return "Not sure which zone"
         case .ignored: return r.detail
-        case .guarded: return "Ignored while Privacy Guard is on"
+        case .guarded: return "Ignored while Privacy Shield is on"
         case .recorded: return r.detail
         case .untrained: return "Tap felt. Calibrate to use it"
         }
@@ -189,20 +216,22 @@ struct MenuPanel: View {
                 Spacer()
                 Text(app.status.lid.map { "Lid \($0)°" } ?? "").font(.caption).foregroundStyle(.tertiary).monospacedDigit()
             }
-            MotionTrace(detector: app.detector, seconds: 4).frame(height: 30)
+            MotionTrace(detector: app.detector, seconds: 4).frame(height: 34)
         }
+        .padding(10)
+        .background(DS.elevated.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: Privacy Guard
+    // MARK: Privacy Shield
 
-    private var privacyGuard: some View {
-        let on = app.privacyGuard.isActive
-        return Button { app.privacyGuard.toggle() } label: {
-            Label(on ? "Turn Off Privacy Guard" : "Privacy Guard", systemImage: on ? "eye" : "eye.slash")
+    private var privacyShield: some View {
+        let on = app.privacyShield.isActive
+        return Button { app.privacyShield.toggle() } label: {
+            Label(on ? "Turn Off Privacy Shield" : "Privacy Shield", systemImage: on ? "eye" : "eye.slash")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
-        .tint(ActionKind.privacyGuard.tint)
+        .tint(ActionKind.privacyShield.tint)
         .controlSize(.large)
         .help("Mute every microphone, turn your meeting camera off and hide the screen")
     }
@@ -240,15 +269,15 @@ struct MenuRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: symbol).frame(width: 18).foregroundStyle(hover ? Color.white : .secondary)
+                Image(systemName: symbol).frame(width: 18).foregroundStyle(hover ? DS.accent : .secondary)
                 Text(title)
                 Spacer()
-                if let shortcut { Text(shortcut).foregroundStyle(hover ? Color.white.opacity(0.85) : Color.secondary) }
+                if let shortcut { Text(shortcut).foregroundStyle(hover ? DS.accent : Color.secondary) }
             }
             .font(.body)
-            .foregroundStyle(hover ? Color.white : .primary)
-            .padding(.horizontal, 8).padding(.vertical, 5)
-            .background(hover ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 8).padding(.vertical, 7)
+            .background(hover ? DS.accent.opacity(0.13) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
