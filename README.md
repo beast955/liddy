@@ -19,7 +19,7 @@ Liddy divides your display into zones. Choose a 2×2, 2×3, or 3×3 layout, then
 | Action | What it does |
 | --- | --- |
 | **Desktop Left / Right** | Move to the previous or next desktop (Space). |
-| **Play / Pause, Next, Previous** | Control the currently playing media, including Music, Spotify, and YouTube. |
+| **Play / Pause, Next, Previous** | Control the currently playing media, including Apple Music, Spotify, Safari Videos and YouTube. |
 | **New Note** | Open a new note in Notes. |
 | **Open App** | Launch an app or bring it to the front if it is already running. |
 | **Privacy Shield** | Mute your microphones, turn off your meeting camera (Zoom, Teams, Webex, or Google Meet), and hide your screen. Tap again or click to return; your microphone is restored to its previous state. |
