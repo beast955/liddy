@@ -1,0 +1,92 @@
+name: Publish signed macOS release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Import Developer ID certificate and store notarization credentials
+        env:
+          CERTIFICATE_P12_BASE64: ${{ secrets.LIDDY_DEVELOPER_ID_P12_BASE64 }}
+          CERTIFICATE_P12_PASSWORD: ${{ secrets.LIDDY_DEVELOPER_ID_P12_PASSWORD }}
+          SIGN_IDENTITY: ${{ secrets.LIDDY_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.LIDDY_NOTARY_APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.LIDDY_NOTARY_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.LIDDY_NOTARY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in CERTIFICATE_P12_BASE64 CERTIFICATE_P12_PASSWORD SIGN_IDENTITY APPLE_ID APPLE_TEAM_ID APPLE_APP_SPECIFIC_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "Required GitHub Actions secret is missing: $name" >&2
+              exit 2
+            fi
+          done
+
+          KEYCHAIN_PATH="$RUNNER_TEMP/liddy-release.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          CERTIFICATE_PATH="$RUNNER_TEMP/liddy-developer-id.p12"
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" "$HOME/Library/Keychains/login.keychain-db"
+
+          printf '%s' "$CERTIFICATE_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          security import "$CERTIFICATE_PATH" -k "$KEYCHAIN_PATH" \
+            -P "$CERTIFICATE_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          xcrun notarytool store-credentials "liddy-notary" \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" --keychain "$KEYCHAIN_PATH"
+
+          echo "LIDDY_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "LIDDY_CERTIFICATE_PATH=$CERTIFICATE_PATH" >> "$GITHUB_ENV"
+          echo "LIDDY_SIGN_IDENTITY=$SIGN_IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Build, sign, notarize, and package DMG
+        env:
+          LIDDY_NOTARY_PROFILE: liddy-notary
+          LIDDY_NOTARY_KEYCHAIN: ${{ runner.temp }}/liddy-release.keychain-db
+          LIDDY_VERSION: ${{ github.ref_name }}
+          LIDDY_BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          VERSION="${LIDDY_VERSION#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag must be a version like v1.2.3 or v1.2.3-rc.1" >&2
+            exit 2
+          fi
+          LIDDY_VERSION="$VERSION" LIDDY_SIGN_IDENTITY="$LIDDY_SIGN_IDENTITY" \
+            LIDDY_BUILD_NUMBER="$LIDDY_BUILD_NUMBER" ./LiddyApp/scripts/package_dmg.sh
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DIST="LiddyApp/build/distribution"
+          gh release create "$GITHUB_REF_NAME" \
+            "$DIST/Liddy-$VERSION.dmg" "$DIST/Liddy-$VERSION.dmg.sha256" \
+            --title "Liddy $VERSION" --generate-notes
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          if [ -n "${LIDDY_KEYCHAIN_PATH:-}" ]; then
+            security delete-keychain "$LIDDY_KEYCHAIN_PATH" || true
+          fi
+          if [ -n "${LIDDY_CERTIFICATE_PATH:-}" ]; then
+            rm -f "$LIDDY_CERTIFICATE_PATH"
+          fi

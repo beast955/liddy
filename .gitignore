@@ -1,0 +1,14 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+.env.*
+!.env.example
+.claude/
+# Local sensor recordings and development data
+data/
+# Local app builds, generated icons and compiler workaround files
+LiddyApp/build/
+LiddyApp/scripts/toolchain-fix/
