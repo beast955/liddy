@@ -1,0 +1,62 @@
+name: Build DMG preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version shown in the preview app and DMG
+        required: true
+        type: string
+        default: 1.0.3
+
+permissions:
+  contents: read
+
+jobs:
+  build-preview:
+    runs-on: macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Validate version and Xcode
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Version must look like 1.2.3 or 1.2.3-rc.1" >&2
+            exit 2
+          fi
+          xcodebuild -version
+
+      - name: Build ad-hoc-signed preview app
+        env:
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          LIDDY_VERSION="$VERSION" LIDDY_BUILD_NUMBER="$BUILD_NUMBER" \
+            ./LiddyApp/scripts/build.sh --no-install
+
+      - name: Package preview DMG
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          DIST="$GITHUB_WORKSPACE/LiddyApp/build/preview"
+          STAGE="$RUNNER_TEMP/liddy-preview-stage"
+          mkdir -p "$DIST" "$STAGE"
+          cp -R "$GITHUB_WORKSPACE/LiddyApp/build/Liddy.app" "$STAGE/Liddy.app"
+          ln -s /Applications "$STAGE/Applications"
+          DMG="$DIST/Liddy-$VERSION-preview.dmg"
+          hdiutil create -volname "Liddy $VERSION Preview" -srcfolder "$STAGE" \
+            -ov -format UDZO "$DMG"
+          hdiutil verify "$DMG"
+          shasum -a 256 "$DMG" > "$DMG.sha256"
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Liddy-${{ inputs.version }}-preview
+          path: LiddyApp/build/preview/Liddy-${{ inputs.version }}-preview.dmg*
+          if-no-files-found: error
+          retention-days: 7
