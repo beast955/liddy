@@ -26,7 +26,7 @@ The laptop already contains the sensor: the motion sensor in the base feels the 
 - Ad-hoc signed build; macOS 14+ deployment, running on macOS 27.
 
 ## Brand Commitments
-Name: Liddy. Voice: calm, plain, exact. Words: "zone", "tap", "bump" (something that isn't a tap), "calibrate", "Privacy Guard".
+Name: Liddy. Voice: calm, plain, exact. Words: "zone", "tap", "bump" (something that isn't a tap), "calibrate", "Privacy Shield".
 
 ## Evidence on Hand
 Real recorded taps (60, 2×2) with 95% cross-validated accuracy. No user testimonials, no usage statistics: never fake them.
