@@ -35,7 +35,7 @@ Liddy is designed to ignore everyday movement, including typing, clicking, scrol
 - During calibration, the meter shows **Good tap**, **A little crisper**, or **Gentler is fine**. Aim for green.
 - If taps are often misread, open **Settings → Training** to check reliability by zone. **Calibrate Again** adds taps where they are needed. Adjust minimum tap strength in **Settings → Detection**.
 
-With crisp taps on a 2×2 grid, Liddy read 95% of taps correctly in our testing. When Liddy isn't confident, it ignores the tap instead of guessing.
+With crisp taps on a 2×2 grid, Liddy read 90% of taps correctly in our testing. When Liddy isn't confident, it ignores the tap instead of guessing.
 
 ## Which Macs work
 
