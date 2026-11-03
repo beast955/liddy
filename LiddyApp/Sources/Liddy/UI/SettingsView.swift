@@ -14,6 +14,15 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: "gearshape"
         }
     }
+    var subtitle: String {
+        switch self {
+        case .zones: "Choose what each screen zone does."
+        case .training: "Review tap examples and recognition quality."
+        case .detection: "Tune how Liddy recognizes a tap."
+        case .permissions: "Check the access Liddy needs to work."
+        case .general: "Set startup and feedback preferences."
+        }
+    }
 }
 
 struct SettingsView: View {
@@ -24,8 +33,9 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            VStack(spacing: 0) {
+        let current = pane.wrappedValue ?? .zones
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 11) {
                     Image(systemName: "rectangle.split.3x3.fill")
                         .font(.system(size: 16, weight: .semibold))
@@ -42,50 +52,124 @@ struct SettingsView: View {
                             .tracking(1.2)
                             .foregroundStyle(.secondary)
                     }
-                    Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 8)
                 .padding(.top, 18)
-                .padding(.bottom, 14)
+                .padding(.bottom, 18)
 
-                Rectangle().fill(DS.hairline).frame(height: 1).padding(.horizontal, 12)
+                Rectangle().fill(DS.hairline).frame(height: 1).padding(.bottom, 12)
 
-                List(SettingsPane.allCases, selection: pane) { p in
-                    Label(p.title, systemImage: p.symbol)
-                        .tag(p)
-                        .font(.system(.body, design: .rounded))
-                        .padding(.vertical, 4)
-                }
-                .listStyle(.sidebar)
-                .scrollContentBackground(.hidden)
-                .background(DS.sidebar)
-                .padding(.top, 8)
-            }
-            .background(DS.sidebar)
-            .navigationSplitViewColumnWidth(min: 200, ideal: 216, max: 246)
-        } detail: {
-            ZStack {
-                DS.canvas.ignoresSafeArea()
-                Group {
-                    switch pane.wrappedValue ?? .zones {
-                    case .zones: ZonesPane()
-                    case .training: TrainingPane()
-                    case .detection: DetectionPane()
-                    case .permissions: PermissionsPane()
-                    case .general: GeneralPane()
+                VStack(spacing: 5) {
+                    ForEach(SettingsPane.allCases) { item in
+                        SettingsNavRow(pane: item, selected: current == item) {
+                            pane.wrappedValue = item
+                        }
                     }
                 }
-                .formStyle(.grouped)
-                .scrollContentBackground(.hidden)
-                .navigationTitle((pane.wrappedValue ?? .zones).title)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 12)
+
+                Spacer(minLength: 16)
+
+                HStack(spacing: 7) {
+                    Circle().fill(DS.accent).frame(width: 6, height: 6)
+                    Text("PRIVATE ON THIS MAC")
+                        .font(.system(size: 9, weight: .semibold, design: .rounded))
+                        .tracking(0.7)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 16)
             }
+            .padding(.horizontal, 12)
+            .frame(width: 212)
+            .frame(maxHeight: .infinity)
+            .background(DS.sidebar)
+
+            Rectangle().fill(DS.hairline).frame(width: 1).ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Image(systemName: current.symbol)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(DS.accent)
+                        .frame(width: 40, height: 40)
+                        .background(DS.accent.opacity(0.11), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(current.title)
+                            .font(.system(.title2, design: .rounded).weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text(current.subtitle)
+                            .font(.system(.callout, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+
+                Rectangle().fill(DS.hairline).frame(height: 1)
+
+                ZStack {
+                    DS.canvas
+                    Group {
+                        switch current {
+                        case .zones: ZonesPane()
+                        case .training: TrainingPane()
+                        case .detection: DetectionPane()
+                        case .permissions: PermissionsPane()
+                        case .general: GeneralPane()
+                        }
+                    }
+                    .formStyle(.grouped)
+                    .scrollContentBackground(.hidden)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(DS.canvas)
         }
-        .navigationSplitViewStyle(.balanced)
+        .background(DS.canvas)
         .tint(DS.accent)
         .preferredColorScheme(.dark)
+    }
+}
+
+
+// MARK: - Sidebar navigation
+
+private struct SettingsNavRow: View {
+    let pane: SettingsPane
+    let selected: Bool
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 11) {
+                Image(systemName: pane.symbol)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(selected || hovered ? DS.accent : Color.secondary)
+                    .frame(width: 19)
+                Text(pane.title)
+                    .font(.system(.body, design: .rounded).weight(selected ? .semibold : .medium))
+                    .foregroundStyle(selected ? .primary : Color.secondary)
+                Spacer(minLength: 0)
+                if selected {
+                    Capsule().fill(DS.accent).frame(width: 3, height: 18)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(selected ? DS.accent.opacity(0.13) : hovered ? DS.elevated.opacity(0.7) : .clear,
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(selected ? DS.accent.opacity(0.20) : .clear, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
