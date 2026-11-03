@@ -34,9 +34,9 @@ Add them under **Settings → Secrets and variables → Actions** in the GitHub 
 ## Zone actions
 
 Desktop Left / Right · New Note · Play/Pause · Next / Previous Track · Open App (launch or bring to front) ·
-Privacy Guard.
+Privacy Shield.
 
-**Privacy Guard** blurs every screen instantly, mutes every microphone at the system level (restored
+**Privacy Shield** blurs every screen instantly, mutes every microphone at the system level (restored
 exactly afterwards), and if a camera is in use, turns it off in Zoom, Microsoft Teams, Webex or
 Google Meet (Chrome, Edge, Brave, Safari), then checks it actually stopped. Tap the zone again or click
 anywhere to undo it all, including turning the camera back on.
@@ -45,7 +45,7 @@ anywhere to undo it all, including turning the camera back on.
 
 - **Accessibility**: required for desktop switching, media keys, New Note and meeting camera control.
 - **Input Monitoring**: some Macs need it before the motion sensor streams.
-- **Automation**: asked the first time Privacy Guard looks for a Google Meet tab.
+- **Automation**: asked the first time Privacy Shield looks for a Google Meet tab.
 
 The local development build is ad-hoc signed. A production Developer ID build keeps a stable signature for macOS privacy permissions.
 
@@ -58,6 +58,6 @@ The local development build is ad-hoc signed. A production Developer ID build ke
 | `Sources/Liddy/Core/Features.swift` | 70 tap features, identical to the Python prototype |
 | `Sources/Liddy/Core/Classifiers.swift`, `ZoneModel.swift` | Logistic regression, kNN, nearest centroid; cross-validation; open-set rejection |
 | `Sources/Liddy/Core/Store.swift` | Config and dataset in `~/Library/Application Support/Liddy` |
-| `Sources/Liddy/Actions/` | Zone actions, key/media events, Privacy Guard, meeting camera control |
+| `Sources/Liddy/Actions/` | Zone actions, key/media events, Privacy Shield, meeting camera control |
 | `Sources/Liddy/UI/` | Menu bar panel, Settings, full-screen calibration, on-screen tap feedback |
 | `Sources/Liddy/App/` | App entry, central model |
